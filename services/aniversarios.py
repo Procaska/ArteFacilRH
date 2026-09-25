@@ -21,6 +21,13 @@ MESES = {
     12: "DEZEMBRO",
 }
 
+def formatar_nome(nome):
+    partes = str(nome).strip().split()
+
+    if len(partes) == 1:
+        return partes[0].lower()
+
+    return f"{partes[0]} {partes[-1]}".lower()
 
 def carregar_planilha(caminho):
     """Carrega a planilha do RH e valida as colunas necessárias."""
@@ -108,7 +115,7 @@ def dividir_em_artes(aniversariantes):
 def preparar_dados_canva(artes, mes):
     """Transforma os grupos no formato esperado pelo Canva."""
 
-    nome_mes = MESES[mes]
+    nome_mes = MESES[mes].lower()
 
     dados_canva = []
 
@@ -127,7 +134,7 @@ def preparar_dados_canva(artes, mes):
 
                 funcionario = grupo.iloc[posicao - 1]
 
-                linha[coluna_nome] = funcionario["Nome"]
+                linha[coluna_nome] = formatar_nome(funcionario["Nome"])
 
                 linha[coluna_data] = (
                     funcionario["Data de Nascimento"]

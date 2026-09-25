@@ -26,7 +26,7 @@ from services.aniversarios import (
     preparar_dados_canva,
     gerar_csv,
 )
-
+from services.leitor_oficial import carregar_planilha_oficial
 
 
 MESES = {
@@ -448,7 +448,7 @@ class MainWindow(QMainWindow):
 
         try:
 
-            df = carregar_planilha(caminho)
+            df = carregar_planilha_oficial(caminho)
 
             self.caminho_planilha = caminho
             self.df = df

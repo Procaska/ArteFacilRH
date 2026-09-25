@@ -117,10 +117,10 @@ class PreviewTempoCasaWindow(QDialog):
         try:
             df_canva = preparar_dados_canva(self.marcos)
 
-            pasta_padrao = Path.cwd() / "output" / "tempo_de_casa"
+            pasta_padrao = Path.cwd() / "output" / "tempo_casa"
             pasta_padrao.mkdir(parents=True, exist_ok=True)
 
-            nome_arquivo = f"tempo_de_casa_{self.mes.lower()}.csv"
+            nome_arquivo = f"tempo_casa_{self.mes.lower()}.csv"
             caminho_padrao = pasta_padrao / nome_arquivo
 
             caminho, _ = QFileDialog.getSaveFileName(
@@ -153,83 +153,83 @@ class PreviewTempoCasaWindow(QDialog):
     def aplicar_estilo(self):
         self.setStyleSheet(
             """
-            QDialog {
-                background: #0F1115;
-            }
+        QDialog {
+            background: #0F1012;
+        }
 
-            QLabel {
-                color: #F5F7FA;
-            }
+        QLabel {
+            color: #F5F5F5;
+        }
 
-            QLabel#titulo {
-                color: #F5F7FA;
-                font-size: 26px;
-                font-weight: 700;
-            }
+        QLabel#titulo {
+            color: #F5F5F5;
+            font-size: 26px;
+            font-weight: 700;
+        }
 
-            QLabel#subtitulo {
-                color: #858C9B;
-                font-size: 13px;
-                font-weight: 600;
-                letter-spacing: 1px;
-            }
+        QLabel#subtitulo {
+            color: #898E98;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
 
-            QScrollArea#scroll {
-                background: transparent;
-                border: none;
-            }
+        QScrollArea#scroll {
+            background: transparent;
+            border: none;
+        }
 
-            QFrame#cardArte {
-                background: #171A21;
-                border: 1px solid #292E38;
-                border-radius: 12px;
-            }
+        QFrame#cardArte {
+            background: #18191D;
+            border: 1px solid #2B2D33;
+            border-radius: 12px;
+        }
 
-            QLabel#rotulo {
-                color: #777F90;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }
+        QLabel#rotulo {
+            color: #737881;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
 
-            QLabel#nome {
-                color: #F5F7FA;
-                font-size: 19px;
-                font-weight: 700;
-            }
+        QLabel#nome {
+            color: #F5F5F5;
+            font-size: 19px;
+            font-weight: 700;
+        }
 
-            QLabel#tempo {
-                color: #9A82FF;
-                font-size: 15px;
-                font-weight: 700;
-            }
+        QLabel#tempo {
+            color: #E04A4A;
+            font-size: 15px;
+            font-weight: 700;
+        }
 
-            QPushButton#botaoSecundario {
-                background: #20242D;
-                color: #C8CDD7;
-                border: 1px solid #303642;
-                border-radius: 8px;
-                padding: 11px 20px;
-                font-size: 12px;
-                font-weight: 700;
-            }
+        QPushButton#botaoSecundario {
+            background: #222428;
+            color: #C8CBD1;
+            border: 1px solid #34363C;
+            border-radius: 8px;
+            padding: 11px 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
 
-            QPushButton#botaoSecundario:hover {
-                background: #292E38;
-            }
+        QPushButton#botaoSecundario:hover {
+            background: #2C2E34;
+        }
 
-            QPushButton#botaoPrincipal {
-                background: #7C5CFC;
-                color: white;
-                border: none;
-                border-radius: 9px;
-                padding: 0 24px;
-                font-size: 12px;
-                font-weight: 700;
-            }
+        QPushButton#botaoPrincipal {
+            background: #A92525;
+            color: white;
+            border: none;
+            border-radius: 9px;
+            padding: 0 24px;
+            font-size: 12px;
+            font-weight: 700;
+        }
 
-            QPushButton#botaoPrincipal:hover {
-                background: #8D72FF;
-            }
-            """
-        )
+        QPushButton#botaoPrincipal:hover {
+            background: #D13A3A;
+        }
+        """
+  )
