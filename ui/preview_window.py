@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
-    QLabel,
+    QLabel, 
     QPushButton,
     QFrame,
     QScrollArea,
@@ -356,7 +356,6 @@ class PreviewWindow(QDialog):
 
     # =========================================================
     # ESTILO
-    # =========================================================
 
     def aplicar_estilo(self):
 
@@ -443,12 +442,8 @@ class PreviewWindow(QDialog):
             QScrollBar::handle:vertical {
                 background-color: #374151;
                 border-radius: 5px;
-                min-height: 30px;
-            }
+                min-height: 30px;}
 
             QScrollBar::add-line:vertical,
-            QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-            """
-        )
+            QScrollBar::sub-line:vertical { height: 0px;}
+            """)
