@@ -1,5 +1,7 @@
 from pathlib import Path
-
+from datetime import datetime
+from ui.preview_window import PreviewWindow
+from ui.preview_tempo_window import PreviewTempoCasaWindow
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -14,6 +16,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from services.tempo_de_casa import buscar_marcos
 
 from services.aniversarios import (
     buscar_aniversariantes,
@@ -40,6 +44,20 @@ MESES = {
     12: "Dezembro",
 }
 
+
+class CardTipo(QFrame):
+    
+    def __init__(self, tipo, callback, parent=None):
+        super().__init__(parent)
+        self.tipo = tipo
+        self.callback = callback
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.callback(self.tipo)
+        super().mousePressEvent(event)
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -47,6 +65,7 @@ class MainWindow(QMainWindow):
 
         self.caminho_planilha = None
         self.df = None
+        self.tipo_arte = "aniversarios"
 
         self.setWindowTitle("ArteFácil RH")
         self.setMinimumSize(920, 700)
@@ -76,7 +95,7 @@ class MainWindow(QMainWindow):
         header = QHBoxLayout()
         header.setSpacing(14)
 
-        logo = QLabel("🎨")
+        logo = QLabel("🔴")
         logo.setObjectName("logo")
 
         bloco_titulo = QVBoxLayout()
@@ -85,9 +104,7 @@ class MainWindow(QMainWindow):
         titulo = QLabel("ArteFácil RH")
         titulo.setObjectName("titulo")
 
-        subtitulo = QLabel(
-            "Automação de artes para comunicação interna"
-        )
+        subtitulo = QLabel("Transforme sua planilha em dados prontos para o Canva.")
         subtitulo.setObjectName("subtitulo")
 
         bloco_titulo.addWidget(titulo)
@@ -108,15 +125,11 @@ class MainWindow(QMainWindow):
         # TÍTULO DA SEÇÃO
         # =====================================================
 
-        titulo_secao = QLabel("Preparar artes")
-        titulo_secao.setObjectName("tituloSecao")
+    
 
-        descricao = QLabel(
-            "Transforme sua planilha em dados prontos para o Canva."
-        )
+        descricao = QLabel()
         descricao.setObjectName("descricao")
 
-        layout.addWidget(titulo_secao)
         layout.addWidget(descricao)
 
         # =====================================================
@@ -129,7 +142,7 @@ class MainWindow(QMainWindow):
         layout_planilha.setContentsMargins(22, 20, 22, 20)
         layout_planilha.setSpacing(14)
 
-        titulo_planilha = QLabel("📊  PLANILHA")
+        titulo_planilha = QLabel("PLANILHA")
         titulo_planilha.setObjectName("tituloCard")
 
         layout_planilha.addWidget(titulo_planilha)
@@ -144,7 +157,7 @@ class MainWindow(QMainWindow):
         bloco_arquivo.setSpacing(3)
 
         self.label_arquivo = QLabel(
-            "Nenhuma planilha selecionada"
+            "Nenhum arquivo anexado"
         )
         self.label_arquivo.setObjectName("nomeArquivo")
 
@@ -156,7 +169,7 @@ class MainWindow(QMainWindow):
         bloco_arquivo.addWidget(self.label_arquivo)
         bloco_arquivo.addWidget(self.label_detalhe)
 
-        botao_arquivo = QPushButton("Alterar")
+        botao_arquivo = QPushButton("Importar")
         botao_arquivo.setObjectName("botaoSecundario")
         botao_arquivo.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -186,7 +199,7 @@ class MainWindow(QMainWindow):
         linha_tipos.setSpacing(15)
 
         # ANIVERSÁRIOS
-        self.card_aniversarios = QFrame()
+        self.card_aniversarios = CardTipo("aniversarios", self.selecionar_tipo_arte)
         self.card_aniversarios.setObjectName(
             "cardTipoSelecionado"
         )
@@ -216,7 +229,7 @@ class MainWindow(QMainWindow):
             "detalheTipo"
         )
 
-        selecionado = QLabel("●  SELECIONADO")
+        selecionado = QLabel()
         selecionado.setObjectName("selecionado")
 
         layout_aniversarios.addWidget(
@@ -229,12 +242,9 @@ class MainWindow(QMainWindow):
             detalhe_aniversario
         )
         layout_aniversarios.addSpacing(5)
-        layout_aniversarios.addWidget(
-            selecionado
-        )
 
         # TEMPO DE CASA
-        self.card_tempo = QFrame()
+        self.card_tempo = CardTipo("tempo", self.selecionar_tipo_arte)
         self.card_tempo.setObjectName("cardTipo")
         self.card_tempo.setSizePolicy(
             QSizePolicy.Policy.Expanding,
@@ -256,7 +266,7 @@ class MainWindow(QMainWindow):
         nome_tempo.setObjectName("nomeTipo")
 
         detalhe_tempo = QLabel(
-            "Em breve"
+            "Artes de tempo de casa"
         )
         detalhe_tempo.setObjectName("detalheTipo")
 
@@ -306,7 +316,7 @@ class MainWindow(QMainWindow):
         # =====================================================
 
         self.botao_preparar = QPushButton(
-            "✨   PREPARAR PARA O CANVA"
+            "PREPARAR PARA O CANVA"
         )
 
         self.botao_preparar.setObjectName(
@@ -344,7 +354,7 @@ class MainWindow(QMainWindow):
         bloco_status = QVBoxLayout()
         bloco_status.setSpacing(2)
 
-        status_titulo = QLabel("PRONTO")
+        status_titulo = QLabel("PREPARANDO..")
         status_titulo.setObjectName(
             "statusTitulo"
         )
@@ -372,7 +382,7 @@ class MainWindow(QMainWindow):
         # =====================================================
 
         rodape = QLabel(
-            "ArteFácil RH  •  Preparação de dados para Canva"
+            "Developed by Arthur Procaska"
         )
 
         rodape.setObjectName("rodape")
@@ -397,6 +407,28 @@ class MainWindow(QMainWindow):
         )
 
         return card
+
+    # =========================================================
+    # SELECIONAR TIPO DE ARTE
+    # =========================================================
+
+    def selecionar_tipo_arte(self, tipo):
+        self.tipo_arte = tipo
+
+        if tipo == "aniversarios":
+            self.card_aniversarios.setObjectName("cardTipoSelecionado")
+            self.card_tempo.setObjectName("cardTipo")
+        else:
+            self.card_aniversarios.setObjectName("cardTipo")
+            self.card_tempo.setObjectName("cardTipoSelecionado")
+
+        for card in (self.card_aniversarios, self.card_tempo):
+            card.style().unpolish(card)
+            card.style().polish(card)
+            card.update()
+        # Tempo de casa usa sempre o mês atual; o seletor de mês fica
+        # disponível apenas para Aniversários.
+        self.combo_mes.setEnabled(tipo == "aniversarios")
 
     # =========================================================
     # SELECIONAR PLANILHA
@@ -448,114 +480,78 @@ class MainWindow(QMainWindow):
     # PREPARAR CANVA
     # =========================================================
 
-def preparar_canva(self):
-
-    if self.df is None:
-        QMessageBox.warning(
-            self,
-            "Planilha não selecionada",
-            "Selecione a planilha antes de continuar.",
-        )
-        return
-
-    mes = self.combo_mes.currentData()
-
-    try:
-        aniversariantes = buscar_aniversariantes(
-            self.df,
-            mes,
-        )
-
-        if aniversariantes.empty:
-            self.status.setText(
-                f"Nenhum aniversariante encontrado em {MESES[mes]}."
-            )
-
-            QMessageBox.information(
-                self,
-                "Nenhum aniversariante",
-                f"Nenhum aniversariante encontrado em "
-                f"{MESES[mes]}.",
-            )
-
-            return
-
-        artes = dividir_em_artes(
-            aniversariantes
-        )
-
-        df_canva = preparar_dados_canva(
-            artes,
-            mes,
-        )
-
-        caminho_saida = (
-            Path("saida")
-            / f"aniversariantes_{MESES[mes].lower()}.csv"
-        )
-
-        arquivo = gerar_csv(
-            df_canva,
-            caminho_saida,
-        )
-
-        quantidade = len(aniversariantes)
-        quantidade_artes = len(artes)
-
-        self.status.setText(
-            f"{quantidade} aniversariante(s) encontrados. "
-            f"{quantidade_artes} arte(s) preparada(s)."
-        )
-
-        QMessageBox.information(
-            self,
-            "Processamento concluído",
-            f"{quantidade} aniversariante(s) encontrados.\n\n"
-            f"{quantidade_artes} arte(s) preparada(s).\n\n"
-            f"Arquivo gerado em:\n{arquivo}",
-        )
-
-    except Exception as erro:
-
-        QMessageBox.critical(
-            self,
-            "Erro ao preparar dados",
-            str(erro),
-        )
+    def preparar_canva(self):
 
         if self.df is None:
-
             QMessageBox.warning(
                 self,
                 "Planilha não selecionada",
                 "Selecione a planilha antes de continuar.",
             )
-
             return
 
-        mes = self.combo_mes.currentData()
+        try:
+            if self.tipo_arte == "tempo":
+                mes_atual = datetime.now().month
+                ano_atual = datetime.now().year
 
-        aniversariantes = buscar_aniversariantes(
-            self.df,
-            mes,
-        )
+                marcos = buscar_marcos(
+                    self.df,
+                    mes_atual,
+                    ano_atual,
+                )
 
-        quantidade = len(
-            aniversariantes
-        )
+                if marcos.empty:
+                    QMessageBox.information(
+                        self,
+                        "Nenhum marco encontrado",
+                        f"Nenhum funcionário com marco de tempo de casa em {MESES[mes_atual]}.",
+                    )
+                    return
 
-        self.status.setText(
-            f"{quantidade} aniversariante(s) "
-            f"encontrado(s) em {MESES[mes]}."
-        )
+                preview = PreviewTempoCasaWindow(
+                    self,
+                    MESES[mes_atual],
+                    mes_atual,
+                    marcos,
+                )
+                preview.exec()
+                return
 
-        QMessageBox.information(
-            self,
-            "Aniversários encontrados",
-            f"Foram encontrados {quantidade} "
-            f"aniversariante(s) em "
-            f"{MESES[mes]}.",
-        )
+            mes = self.combo_mes.currentData()
+
+            aniversariantes = buscar_aniversariantes(
+                self.df,
+                mes,
+            )
+
+            if aniversariantes.empty:
+                QMessageBox.information(
+                    self,
+                    "Nenhum aniversariante",
+                    f"Nenhum aniversariante encontrado em {MESES[mes]}.",
+                )
+                return
+
+            artes = dividir_em_artes(aniversariantes)
+
+            preview = PreviewWindow(
+                self,
+                MESES[mes],
+                mes,
+                aniversariantes,
+                artes,
+            )
+
+            preview.exec()
+
+        except Exception as erro:
+            QMessageBox.critical(
+                self,
+                "Erro ao preparar dados",
+                str(erro),
+            )
+
 
     # =========================================================
     # ESTILO
@@ -564,277 +560,277 @@ def preparar_canva(self):
     def aplicar_estilo(self):
 
         self.setStyleSheet(
-            """
-            /* =============================================
-               BASE
-            ============================================= */
+"""
+/* =============================================
+   BASE
+============================================= */
 
-            QMainWindow {
-                background: #0F1115;
-            }
+QMainWindow {
+    background: #0F1012;
+}
 
-            QWidget#central {
-                background: #0F1115;
-            }
+QWidget#central {
+    background: #0F1012;
+}
 
-            QLabel {
-                color: #F5F7FA;
-            }
-
-
-            /* =============================================
-               CABEÇALHO
-            ============================================= */
-
-            QLabel#logo {
-                font-size: 34px;
-            }
-
-            QLabel#titulo {
-                color: #F5F7FA;
-                font-size: 25px;
-                font-weight: 700;
-            }
-
-            QLabel#subtitulo {
-                color: #8F96A5;
-                font-size: 13px;
-            }
-
-            QLabel#statusHeader {
-                color: #35D07F;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }
+QLabel {
+    color: #D6A354;
+}
 
 
-            /* =============================================
-               TÍTULOS
-            ============================================= */
+/* =============================================
+   CABEÇALHO
+============================================= */
 
-            QLabel#tituloSecao {
-                color: #F5F7FA;
-                font-size: 27px;
-                font-weight: 700;
-                margin-top: 8px;
-            }
+QLabel#logo {
+    font-size: 34px;
+}
 
-            QLabel#descricao {
-                color: #858C9B;
-                font-size: 14px;
-            }
+QLabel#titulo {
+    color: #F5F5F5;
+    font-size: 25px;
+    font-weight: 700;
+}
 
-            QLabel#tituloGrupo {
-                color: #777F90;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
-                margin-top: 5px;
-            }
+QLabel#subtitulo {
+    color: #92969F;
+    font-size: 13px;
+}
 
-
-            /* =============================================
-               CARDS
-            ============================================= */
-
-            QFrame#card {
-                background: #171A21;
-                border: 1px solid #292E38;
-                border-radius: 14px;
-            }
-
-            QFrame#cardStatus {
-                background: #14181E;
-                border: 1px solid #252B34;
-                border-radius: 10px;
-            }
-
-            QLabel#tituloCard {
-                color: #AEB5C3;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }
+QLabel#statusHeader {
+    color: #43D17D;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
 
 
-            /* =============================================
-               ARQUIVO
-            ============================================= */
+/* =============================================
+   TÍTULOS
+============================================= */
 
-            QLabel#iconeArquivo {
-                background: #20242D;
-                border-radius: 10px;
-                padding: 12px;
-                font-size: 22px;
-            }
+QLabel#tituloSecao {
+    color: #F5F5F5;
+    font-size: 27px;
+    font-weight: 700;
+    margin-top: 8px;
+}
 
-            QLabel#nomeArquivo {
-                color: #F5F7FA;
-                font-size: 15px;
-                font-weight: 600;
-            }
+QLabel#descricao {
+    color: #898E98;
+    font-size: 14px;
+}
 
-            QLabel#detalheArquivo {
-                color: #777F90;
-                font-size: 12px;
-            }
-
-
-            /* =============================================
-               BOTÕES
-            ============================================= */
-
-            QPushButton#botaoSecundario {
-                background: #20242D;
-                color: #C8CDD7;
-                border: 1px solid #303642;
-                border-radius: 8px;
-                padding: 9px 18px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-
-            QPushButton#botaoSecundario:hover {
-                background: #292E38;
-                border-color: #414857;
-            }
+QLabel#tituloGrupo {
+    color: #737881;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
 
 
-            /* =============================================
-               TIPOS DE ARTE
-            ============================================= */
+/* =============================================
+   CARDS
+============================================= */
 
-            QFrame#cardTipoSelecionado {
-                background: #191722;
-                border: 1px solid #7C5CFC;
-                border-radius: 14px;
-            }
+QFrame#card {
+    background: #18191D;
+    border: 1px solid #2B2D33;
+    border-radius: 14px;
+}
 
-            QFrame#cardTipoSelecionado:hover {
-                background: #211D32;
-                border-color: #9278FF;
-            }
+QFrame#cardStatus {
+    background: #151619;
+    border: 1px solid #282A2F;
+    border-radius: 10px;
+}
 
-            QFrame#cardTipo {
-                background: #15181E;
-                border: 1px solid #252A33;
-                border-radius: 14px;
-            }
-
-            QLabel#iconeTipo {
-                font-size: 25px;
-            }
-
-            QLabel#nomeTipo {
-                color: #F5F7FA;
-                font-size: 16px;
-                font-weight: 700;
-            }
-
-            QLabel#detalheTipo {
-                color: #7D8595;
-                font-size: 12px;
-            }
-
-            QLabel#selecionado {
-                color: #9A82FF;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }
+QLabel#tituloCard {
+    color: #B3B6BE;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
 
 
-            /* =============================================
-               COMBOBOX
-            ============================================= */
+/* =============================================
+   ARQUIVO
+============================================= */
 
-            QComboBox {
-                background: #171A21;
-                color: #E7EAF0;
-                border: 1px solid #292E38;
-                border-radius: 9px;
-                padding: 12px 15px;
-                font-size: 14px;
-                min-height: 20px;
-            }
+QLabel#iconeArquivo {
+    background: #23252A;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 22px;
+}
 
-            QComboBox:hover {
-                border-color: #414857;
-            }
+QLabel#nomeArquivo {
+    color: #F5F5F5;
+    font-size: 15px;
+    font-weight: 600;
+}
 
-            QComboBox:focus {
-                border-color: #7C5CFC;
-            }
-
-            QComboBox::drop-down {
-                border: none;
-                width: 35px;
-            }
-
-            QComboBox QAbstractItemView {
-                background: #191D24;
-                color: #F5F7FA;
-                border: 1px solid #303642;
-                selection-background-color: #7C5CFC;
-                selection-color: white;
-                padding: 5px;
-            }
+QLabel#detalheArquivo {
+    color: #747982;
+    font-size: 12px;
+}
 
 
-            /* =============================================
-               BOTÃO PRINCIPAL
-            ============================================= */
+/* =============================================
+   BOTÕES
+============================================= */
 
-            QPushButton#botaoPrincipal {
-                background: #7C5CFC;
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 13px;
-                font-weight: 700;
-                letter-spacing: 0.5px;
-            }
+QPushButton#botaoSecundario {
+    background: #222428;
+    color: #C8CBD1;
+    border: 1px solid #34363C;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 12px;
+    font-weight: 600;
+}
 
-            QPushButton#botaoPrincipal:hover {
-                background: #8D72FF;
-            }
-
-            QPushButton#botaoPrincipal:pressed {
-                background: #6949E8;
-            }
+QPushButton#botaoSecundario:hover {
+    background: #2C2E34;
+    border-color: #484A51;
+}
 
 
-            /* =============================================
-               STATUS
-            ============================================= */
+/* =============================================
+   TIPOS DE ARTE
+============================================= */
 
-            QLabel#indicadorStatus {
-                color: #35D07F;
-                font-size: 13px;
-            }
+QFrame#cardTipoSelecionado {
+    background: #241719;
+    border: 1px solid #C73535;
+    border-radius: 14px;
+}
 
-            QLabel#statusTitulo {
-                color: #35D07F;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }
+QFrame#cardTipoSelecionado:hover {
+    background: #301A1C;
+    border-color: #E04A4A;
+}
 
-            QLabel#statusTexto {
-                color: #858C9B;
-                font-size: 12px;
-            }
+QFrame#cardTipo {
+    background: #16171A;
+    border: 1px solid #292B30;
+    border-radius: 14px;
+}
+
+QLabel#iconeTipo {
+    font-size: 25px;
+}
+
+QLabel#nomeTipo {
+    color: #F5F5F5;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QLabel#detalheTipo {
+    color: #7C818A;
+    font-size: 12px;
+}
+
+QLabel#selecionado {
+    color: #E04A4A;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
 
 
-            /* =============================================
-               RODAPÉ
-            ============================================= */
+/* =============================================
+   COMBOBOX
+============================================= */
 
-            QLabel#rodape {
-                color: #555D6C;
-                font-size: 10px;
-            }
+QComboBox {
+    background: #18191D;
+    color: #E8E9EC;
+    border: 1px solid #2C2E34;
+    border-radius: 9px;
+    padding: 12px 15px;
+    font-size: 14px;
+    min-height: 20px;
+}
 
-            """
-        ) #teste
+QComboBox:hover {
+    border-color: #484A51;
+}
+
+QComboBox:focus {
+    border-color: #C73535;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 35px;
+}
+
+QComboBox QAbstractItemView {
+    background: #1C1D21;
+    color: #F5F5F5;
+    border: 1px solid #35373D;
+    selection-background-color: #A92525;
+    selection-color: white;
+    padding: 5px;
+}
+
+
+/* =============================================
+   BOTÃO PRINCIPAL
+============================================= */
+
+QPushButton#botaoPrincipal {
+    background: #A92525;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+QPushButton#botaoPrincipal:hover {
+    background: #D13A3A;
+}
+
+QPushButton#botaoPrincipal:pressed {
+    background: #871D1D;
+}
+
+
+/* =============================================
+   STATUS
+============================================= */
+
+QLabel#indicadorStatus {
+    color: #43D17D;
+    font-size: 13px;
+}
+
+QLabel#statusTitulo {
+    color: #43D17D;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+QLabel#statusTexto {
+    color: #898E98;
+    font-size: 12px;
+}
+
+
+/* =============================================
+   RODAPÉ
+============================================= */
+
+QLabel#rodape {
+    color: #565A63;
+    font-size: 10px;
+}
+
+"""
+  ) #teste
