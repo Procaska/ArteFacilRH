@@ -186,7 +186,7 @@ O projeto utiliza **PyInstaller** para transformar a aplicação Python em um ex
 Execute o comando abaixo no terminal do **VS Code**, estando na pasta raiz do projeto:
 
 ```powershell
-python -m PyInstaller --noconfirm --clean --windowed --name "ArteFacilRH" --icon "assets\logo.ico" --add-data "assets;assets" main.py
+python -m PyInstaller --noconfirm --clean --windowed --name "ArteFacil RH" --icon "assets\logo.ico" --add-data "assets;assets" main.py
 ```
 
 Após a compilação, o executável será encontrado em:
