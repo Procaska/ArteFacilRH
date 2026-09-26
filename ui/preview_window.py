@@ -193,14 +193,17 @@ class PreviewWindow(QDialog):
                 f"{self.mes.lower()}.csv"
             )
 
-            # ESCOLHER LOCAL
+           # ESCOLHER LOCAL
+            pasta_downloads = Path.home() / "Downloads"
+            caminho_padrao = pasta_downloads / nome_sugerido
+
             caminho, _ = QFileDialog.getSaveFileName(
                 self,
                 "Salvar arquivo CSV",
-                nome_sugerido,
+                str(caminho_padrao),
                 "Arquivo CSV (*.csv)",
             )
-
+            
             # Usuário cancelou
             if not caminho:
                 return

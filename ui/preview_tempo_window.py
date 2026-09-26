@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -18,9 +19,25 @@ from PySide6.QtWidgets import (
 from services.tempo_de_casa import preparar_dados_canva, gerar_csv
 
 
+MESES = {
+    1: "Janeiro",
+    2: "Fevereiro",
+    3: "Março",
+    4: "Abril",
+    5: "Maio",
+    6: "Junho",
+    7: "Julho",
+    8: "Agosto",
+    9: "Setembro",
+    10: "Outubro",
+    11: "Novembro",
+    12: "Dezembro",
+}
+
+
 class PreviewTempoCasaWindow(QDialog):
 
-    def __init__(self, parent, mes, mes_numero, marcos):
+    def __init__(self, parent=None, mes=None, mes_numero=None, marcos=None):
         super().__init__(parent)
 
         self.mes = mes
@@ -60,7 +77,10 @@ class PreviewTempoCasaWindow(QDialog):
         lista.setContentsMargins(4, 4, 4, 4)
         lista.setSpacing(12)
 
-        for numero, (_, funcionario) in enumerate(self.marcos.iterrows(), start=1):
+        for numero, (_, funcionario) in enumerate(
+            self.marcos.iterrows(),
+            start=1,
+        ):
             card = QFrame()
             card.setObjectName("cardArte")
             card.setSizePolicy(
@@ -82,9 +102,15 @@ class PreviewTempoCasaWindow(QDialog):
             tempo = QLabel(f"{funcionario['Tempo de Casa']} ANOS")
             tempo.setObjectName("tempo")
 
+            data_marco = QLabel(
+                f"MARCO: {funcionario['Data do Marco']}"
+            )
+            data_marco.setObjectName("dataMarco")
+
             card_layout.addWidget(rotulo)
             card_layout.addWidget(nome)
             card_layout.addWidget(tempo)
+            card_layout.addWidget(data_marco)
 
             lista.addWidget(card)
 
@@ -115,12 +141,16 @@ class PreviewTempoCasaWindow(QDialog):
 
     def gerar_csv(self):
         try:
-            df_canva = preparar_dados_canva(self.marcos)
+            df_canva = preparar_dados_canva(
+                self.marcos,
+                self.mes_numero,
+                MESES,
+            )
 
-            pasta_padrao = Path.cwd() / "output" / "tempo_casa"
-            pasta_padrao.mkdir(parents=True, exist_ok=True)
+            pasta_padrao = Path.home() / "Downloads"
 
             nome_arquivo = f"tempo_casa_{self.mes.lower()}.csv"
+
             caminho_padrao = pasta_padrao / nome_arquivo
 
             caminho, _ = QFileDialog.getSaveFileName(
@@ -204,6 +234,12 @@ class PreviewTempoCasaWindow(QDialog):
             font-weight: 700;
         }
 
+        QLabel#dataMarco {
+            color: #898E98;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         QPushButton#botaoSecundario {
             background: #222428;
             color: #C8CBD1;
@@ -232,4 +268,4 @@ class PreviewTempoCasaWindow(QDialog):
             background: #D13A3A;
         }
         """
-  )
+        )

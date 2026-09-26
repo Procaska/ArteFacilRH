@@ -1,8 +1,9 @@
+import sys
 from pathlib import Path
-from datetime import datetime
 from ui.preview_window import PreviewWindow
 from ui.preview_tempo_window import PreviewTempoCasaWindow
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -28,7 +29,16 @@ from services.aniversarios import (
 )
 from services.leitor_oficial import carregar_planilha_oficial
 
+#CARREGA O CAMINHO CORRETO PARA O EXECUTÁVEL
+def caminho_recurso(caminho):
+    if getattr(sys, "frozen", False):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parent.parent
+    return base / caminho
 
+
+#DICIONÁRIO
 MESES = {
     1: "Janeiro",
     2: "Fevereiro",
@@ -63,6 +73,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.setWindowIcon(QIcon(str(caminho_recurso("assets/logo.ico"))))
+
         self.caminho_planilha = None
         self.df = None
         self.tipo_arte = "aniversarios"
@@ -95,7 +107,11 @@ class MainWindow(QMainWindow):
         header = QHBoxLayout()
         header.setSpacing(14)
 
-        logo = QLabel("🔴")
+        logo = QLabel()
+        logo.setPixmap(QIcon(str(caminho_recurso("assets/jgbb.svg"))).pixmap(98, 51))
+        logo.setFixedSize(98,52)
+        logo.setScaledContents(True)
+
         logo.setObjectName("logo")
 
         bloco_titulo = QVBoxLayout()
@@ -348,13 +364,13 @@ class MainWindow(QMainWindow):
             18, 14, 18, 14
         )
 
-        indicador = QLabel("●")
+        indicador = QLabel()
         indicador.setObjectName("indicadorStatus")
 
         bloco_status = QVBoxLayout()
         bloco_status.setSpacing(2)
 
-        status_titulo = QLabel("PREPARANDO..")
+        status_titulo = QLabel("AGUARDE..")
         status_titulo.setObjectName(
             "statusTitulo"
         )
@@ -426,9 +442,8 @@ class MainWindow(QMainWindow):
             card.style().unpolish(card)
             card.style().polish(card)
             card.update()
-        # Tempo de casa usa sempre o mês atual; o seletor de mês fica
-        # disponível apenas para Aniversários.
-        self.combo_mes.setEnabled(tipo == "aniversarios")
+        # O mesmo seletor de mês é usado pelos dois tipos de arte.
+        self.combo_mes.setEnabled(True)
 
     # =========================================================
     # SELECIONAR PLANILHA
@@ -491,13 +506,14 @@ class MainWindow(QMainWindow):
             return
 
         try:
+            mes = self.combo_mes.currentData()
+
             if self.tipo_arte == "tempo":
-                mes_atual = datetime.now().month
-                ano_atual = datetime.now().year
+                ano_atual = __import__("datetime").datetime.now().year
 
                 marcos = buscar_marcos(
                     self.df,
-                    mes_atual,
+                    mes,
                     ano_atual,
                 )
 
@@ -505,20 +521,18 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(
                         self,
                         "Nenhum marco encontrado",
-                        f"Nenhum funcionário com marco de tempo de casa em {MESES[mes_atual]}.",
+                        f"Nenhum funcionário com marco de tempo de casa em {MESES[mes]}.",
                     )
                     return
 
                 preview = PreviewTempoCasaWindow(
                     self,
-                    MESES[mes_atual],
-                    mes_atual,
+                    MESES[mes],
+                    mes,
                     marcos,
                 )
                 preview.exec()
                 return
-
-            mes = self.combo_mes.currentData()
 
             aniversariantes = buscar_aniversariantes(
                 self.df,
@@ -598,7 +612,7 @@ QLabel#subtitulo {
 }
 
 QLabel#statusHeader {
-    color: #43D17D;
+    color: #2EFF38;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
@@ -806,12 +820,12 @@ QPushButton#botaoPrincipal:pressed {
 ============================================= */
 
 QLabel#indicadorStatus {
-    color: #43D17D;
+    color: #B7BC9F;
     font-size: 13px;
 }
 
-QLabel#statusTitulo {
-    color: #43D17D;
+QLabel#statusTitulo {   
+    color: #B7BC9F;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
